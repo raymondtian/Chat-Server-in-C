@@ -16,30 +16,30 @@
 //*****************************HELPER FUNCTIONS*****************************//
 
 // Own implementation to copy identifier into client handler message
-void copy_ident1(char client_handler_message[2048], char identifier[257]) {
-    for (int i = 0; i < 256; i ++) {
+void copy_ident1(char client_handler_message[MAX_MSG], char identifier[MAX_IDENT + 1]) {
+    for (int i = 0; i < MAX_IDENT; i ++) {
         client_handler_message[i + 2] = identifier[i];
     }
 }
 
 // Own implementation to copy client message into client handler message
-void copy_message1(char client_handler_message[2048], char client_message_converted[1790]) {
-    for (int i = 0; i < 1790; i ++) {
+void copy_message1(char client_handler_message[MAX_MSG], char client_message_converted[MAX_CLIENT_MSG]) {
+    for (int i = 0; i < MAX_CLIENT_MSG; i ++) {
         client_handler_message[i + 2 + 256] = client_message_converted[i];
     }
 }
 
 // Own implementation to copy identifier into ignore client
-void copy_ident2(char ignore[260], char identifier[257]) {
-    for (int i = 0; i < 256; i ++) {
+void copy_ident2(char ignore[MAX_IDENT + 4], char identifier[MAX_IDENT + 1]) {
+    for (int i = 0; i < MAX_IDENT; i ++) {
         ignore[i] = identifier[i];
     }
     strcat(ignore, "_RD");
 }
 
 // Own implementation to set up relevant messages and file names for RECEIVE say
-void set_up_receive_say(char client_handler_message[2048], char identifier[257], 
-char client_message_converted[1790], char ignore[260]) {
+void set_up_receive_say(char client_handler_message[MAX_MSG], char identifier[MAX_IDENT + 1], 
+char client_message_converted[MAX_MSG], char ignore[MAX_IDENT + 4]) {
      // Setting up client handler's message
     client_handler_message[0] = 3; // type for RECEIVE
     copy_ident1(client_handler_message, identifier);
@@ -50,8 +50,8 @@ char client_message_converted[1790], char ignore[260]) {
 }
 
 // Own implementation to parse the client message to say
-void say(char client_message_converted[1790], char client_message[2048], int say_count) {
-    for (int i = 0; i < 1790; i ++) {
+void say(char client_message_converted[MAX_CLIENT_MSG], char client_message[MAX_MSG], int say_count) {
+    for (int i = 0; i < MAX_CLIENT_MSG; i ++) {
         client_message_converted[i] = client_message[i + 2];
             if (client_message_converted[i] != 0) {
                 say_count ++;
@@ -61,10 +61,10 @@ void say(char client_message_converted[1790], char client_message[2048], int say
 }
 
 // Own implementation to parse the gevent file to connect
-void connect(char message[2048], char identifier[257], char domain[2046], char temp_domain[2046], char ident_wr[259], 
-char ident_rd[259], char final_directory_wr[2048], char final_directory_rd[2048],  
+void connect(char message[MAX_MSG], char identifier[MAX_IDENT + 1], char domain[MAX_DOMAIN + 256], char temp_domain[MAX_DOMAIN + 256], char ident_wr[MAX_IDENT + 3], 
+char ident_rd[MAX_IDENT + 3], char final_directory_wr[MAX_NAME], char final_directory_rd[MAX_NAME],  
 int ident_count, int domain_count) {
-    for (int i = 0; i < 256; i ++) {
+    for (int i = 0; i < MAX_IDENT; i ++) {
         identifier[i] = message[i + 2];
         if (identifier[i] != 0) {
             ident_count ++;
@@ -72,12 +72,12 @@ int ident_count, int domain_count) {
     }
     identifier[ident_count + 1] = '\0';
 
-    memset(ident_wr, '\0', 259);
-    memset(ident_rd, '\0', 259);
+    memset(ident_wr, '\0', MAX_IDENT + 3);
+    memset(ident_rd, '\0', MAX_IDENT + 3);
     strcpy(ident_wr, identifier);
     strcpy(ident_rd, identifier);
     
-    for (int j = 0; j < 1790; j ++) {
+    for (int j = 0; j < MAX_DOMAIN; j ++) {
         domain[j] = message[j + 2 + 256];
         if (domain[j] != 0) {
             domain_count ++;
@@ -87,20 +87,20 @@ int ident_count, int domain_count) {
     strcpy(temp_domain, domain);
     strcat(temp_domain, "/"); // comp2017/
 
-    memset(final_directory_wr, '\0', 2048);
+    memset(final_directory_wr, '\0', MAX_NAME);
     strcat(final_directory_wr, temp_domain); // comp2017/
     strcat(final_directory_wr, ident_wr); // comp2017/spectre
     strcat(final_directory_wr, "_WR"); // comp2017/spectre_WR
 
-    memset(final_directory_rd, '\0', 2048);
+    memset(final_directory_rd, '\0', MAX_NAME);
     strcat(final_directory_rd, temp_domain); // comp2017/
     strcat(final_directory_rd, ident_rd); // comp2017/spectre
     strcat(final_directory_rd, "_RD"); // comp2017/spectre_RD
 }
 
 // Own implementation to copy domain into files to write to
-void copy_name(char write_files[2049], char domain[2046], char * name) {
-    for (int i = 0; i < 1790; i ++) {
+void copy_name(char write_files[MAX_MSG], char domain[MAX_DOMAIN + 256], char * name) {
+    for (int i = 0; i < MAX_DOMAIN; i ++) {
         write_files[i] = domain[i];
     }
     strcat(write_files, "/");
@@ -108,8 +108,8 @@ void copy_name(char write_files[2049], char domain[2046], char * name) {
 }
 
 // Own implementation to traverse through domain to find client to relay RECEIVE message to
-void domain_search(DIR * dom, struct dirent * entry, int len_ident, char post_fix[4], 
-char ignore[260], char write_files[2049], char domain[2046], int rd_pipe_fd, char client_handler_message[2048]) {
+void domain_search(DIR * dom, struct dirent * entry, int len_ident, char post_fix[MAX_POST_FIX], 
+char ignore[MAX_IDENT + 4], char write_files[MAX_NAME + 1], char domain[MAX_DOMAIN + 256], int rd_pipe_fd, char client_handler_message[MAX_MSG]) {
     while ((entry = readdir(dom))) {
         // Setting a variable for the respective file's name
         char * name = entry->d_name;
@@ -127,15 +127,15 @@ char ignore[260], char write_files[2049], char domain[2046], int rd_pipe_fd, cha
                 rd_pipe_fd = open(write_files, O_WRONLY);
 
                 // Client handler will relay the message
-                write(rd_pipe_fd, client_handler_message, 2048);
+                write(rd_pipe_fd, client_handler_message, MAX_MSG);
                 close(rd_pipe_fd);
         }
     }
 }
 
 // Own implementation to parse the client message to saycont
-void say_cont(char saycont_message_converted[1789], char client_message[2048], int say_cont_count, char termination[1]) {
-    for (int i = 0; i < 1789; i ++) {
+void say_cont(char saycont_message_converted[MAX_CLIENT_MSG - 1], char client_message[MAX_MSG], int say_cont_count, char termination[MAX_TERMINATION]) {
+    for (int i = 0; i < MAX_CLIENT_MSG - 1; i ++) {
         saycont_message_converted[i] = client_message[i + 2];
         if (saycont_message_converted[i] != 0) {
             say_cont_count ++;
@@ -146,20 +146,20 @@ void say_cont(char saycont_message_converted[1789], char client_message[2048], i
 }
 
 // Own implementation to copy client message into client handler message
-void copy_message2(char client_handler_message[2048], char saycont_message_converted[1789]) {
-    for (int i = 0; i < 1789; i ++) {
+void copy_message2(char client_handler_message[MAX_MSG], char saycont_message_converted[MAX_CLIENT_MSG - 1]) {
+    for (int i = 0; i < MAX_CLIENT_MSG - 1; i ++) {
         client_handler_message[i + 2 + 256] = saycont_message_converted[i];
     }
 }
 
 // Own implementation to copy termination into client handler message
-void copy_termination(char client_handler_message[2048], char termination[2]) {
+void copy_termination(char client_handler_message[MAX_MSG], char termination[MAX_TERMINATION + 1]) {
     client_handler_message[2 + 256 + 1789] = termination[0];
 }
 
 // Own implementation to set up relevant messages and file names for RECEIVE for saycont
-void set_up_recvcont(char client_handler_message[2048], char identifier[257], 
-char saycont_message_converted[1789], char termination[1], char ignore[260]) {
+void set_up_recvcont(char client_handler_message[MAX_MSG], char identifier[MAX_IDENT + 1], 
+char saycont_message_converted[MAX_CLIENT_MSG - 1], char termination[MAX_TERMINATION], char ignore[MAX_IDENT + 4]) {
     // Setting up client handler's message
     client_handler_message[0] = 4; // type for RECVCONT
     copy_ident1(client_handler_message, identifier);
@@ -185,35 +185,35 @@ int main(int argc, char** argv) {
     int gevent, gevent_fd;
 
     // Message in global process
-    char message[2048];
+    char message[MAX_MSG];
     // Getting rid of all junk in message
     memset(message, '\0', sizeof(message));
     // Identifier
-    char identifier[257];
+    char identifier[MAX_IDENT + 1];
     // Getting rid of all junk in message
     memset(identifier, '\0', sizeof(identifier));
     // Domain: max size of domain is 2048 - type - min size of ident
-    char domain[2046];
+    char domain[MAX_DOMAIN + 256];
     // Getting rid of all junk in message
     memset(domain, '\0', sizeof(domain));
     // Domain to copy strings
-    char temp_domain[2046];
+    char temp_domain[MAX_DOMAIN + 256];
     // Getting rid of all junk in message
     memset(temp_domain, '\0', sizeof(temp_domain));
     // WR identifier
-    char ident_wr[259];
+    char ident_wr[MAX_IDENT + 3];
     // Getting rid of all junk in message
     memset(ident_wr, '\0', sizeof(ident_wr));
     // RD identifier
-    char ident_rd[259];
+    char ident_rd[MAX_IDENT + 3];
     // Getting rid of all junk in message
     memset(ident_rd, '\0', sizeof(ident_rd));
     // Final WR directory
-    char final_directory_wr[2048];
+    char final_directory_wr[MAX_NAME];
     // Getting rid of all junk in message
     memset(final_directory_wr, '\0', sizeof(final_directory_wr));
     // Final RD directory
-    char final_directory_rd[2048];
+    char final_directory_rd[MAX_NAME];
     // Getting rid of all junk in message
     memset(final_directory_rd, '\0', sizeof(final_directory_rd));
 
@@ -242,34 +242,34 @@ int main(int argc, char** argv) {
     //************************CLIENT HANDLER VARIABLES************************//
 
     // Char array for message that client will send to client handler (msg in WR pipe)
-    char client_message[2048];
+    char client_message[MAX_MSG];
     // Getting rid of all junk in message
     memset(client_message, '\0', sizeof(client_message));
     // Converted char array for message that client will send to client handler
-    char client_message_converted[1790];
+    char client_message_converted[MAX_CLIENT_MSG];
     // Getting rid of all junk in message 
     memset(client_message_converted, '\0', sizeof(client_message_converted));
     // Char array for message that client handler will relay to all other clients
-    char client_handler_message[2048];
+    char client_handler_message[MAX_MSG];
     // Getting rid of all junk in message
     memset(client_handler_message, '\0', sizeof(client_handler_message));
     // Char array for files that will be written to
-    char write_files[2049];
+    char write_files[MAX_MSG + 1];
     // Getting rid of all junk in message
     memset(write_files, '\0', sizeof(write_files));   
     // Char array for converted saycont message
-    char saycont_message_converted[1789];
+    char saycont_message_converted[MAX_CLIENT_MSG - 1];
     // Getting rid of all junk in message
     memset(saycont_message_converted, '\0', sizeof(saycont_message_converted));   
     // _WR or _RD
-    char post_fix[4];
+    char post_fix[MAX_POST_FIX];
     memset(post_fix, '\0', sizeof(post_fix));
     // Client to ignore (ignore the client that sends the msg)
-    char ignore[260];
+    char ignore[MAX_IDENT + 4];
     // Getting rid of all junk in message
     memset(ignore, '\0', sizeof(ignore));
     // Termination
-    char termination[2];
+    char termination[MAX_TERMINATION + 1];
     memset(termination, '\0', sizeof(termination));
 
     // Type for clients (1-7)
